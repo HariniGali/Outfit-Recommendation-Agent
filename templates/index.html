@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zara Fashion Recommendations</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; font-size: 2.5em; margin-bottom: 10px; }
+        .subtitle { color: #7f8c8d; font-size: 1.1em; }
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filter-group { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .filter-group label { font-weight: 600; color: #2c3e50; }
+        .filter-group select {
+            padding: 8px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        .product-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+        .product-card.selected {
+            border: 3px solid #3498db;
+            transform: scale(1.02);
+        }
+        .product-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            background: #f8f9fa;
+        }
+        .product-info { padding: 15px; }
+        .product-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+        .product-category {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-transform: capitalize;
+        }
+        .recommendations-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 40px;
+            display: none;
+        }
+        .recommendations-section.active { display: block; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .anchor-product {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .anchor-product img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .category-section { margin-bottom: 40px; }
+        .category-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            text-transform: capitalize;
+        }
+        .recommendation-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .recommendation-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .similarity-score {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛍️ Zara Fashion Recommendations</h1>
+            <p class="subtitle">Select a product to get personalised outfit recommendations</p>
+        </header>
+
+        <div class="filter-section">
+            <div class="filter-group">
+                <label for="occasion">Occasion:</label>
+                <select id="occasion">
+                    <option value="casual everyday">Casual</option>
+                    <option value="formal business">Formal</option>
+                    <option value="party night out">Party</option>
+                    <option value="business professional">Business</option>
+                    <option value="weekend relaxed">Weekend</option>
+                </select>
+
+                <label for="style">Style:</label>
+                <select id="style">
+                    <option value="modern minimalist">Modern</option>
+                    <option value="classic timeless">Classic</option>
+                    <option value="urban streetwear">Streetwear</option>
+                    <option value="elegant sophisticated">Elegant</option>
+                    <option value="minimalist clean">Minimalist</option>
+                </select>
+
+                <button onclick="loadProducts()">🔄 Refresh Products</button>
+            </div>
+        </div>
+
+        <div id="products-container">
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">Available Products</h2>
+            <div class="products-grid" id="products-grid"></div>
+        </div>
+
+        <div id="recommendations-section" class="recommendations-section">
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">Your Personalised Outfit</h2>
+            <div id="recommendations-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedProduct = null;
+
+        window.onload = function () { loadProducts(); };
+
+        async function loadProducts() {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '<div class="loading"><div class="spinner"></div>Loading products...</div>';
+
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
+
+                grid.innerHTML = '';
+                products.forEach(product => {
+                    const card = createProductCard(product);
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                grid.innerHTML = '<div class="loading">Error loading products.</div>';
+                console.error('Error:', error);
+            }
+        }
+
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.onclick = () => selectProduct(product, card);
+
+            const fallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f0f0f0' width='200' height='200'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+            card.innerHTML = `
+                <img src="/images/${product.image_filename}"
+                     alt="${product.name}"
+                     class="product-image"
+                     onerror="this.src='${fallback}'">
+                <div class="product-info">
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-category">${product.category}</div>
+                </div>
+            `;
+            return card;
+        }
+
+        async function selectProduct(product, cardElement) {
+            document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            selectedProduct = product;
+
+            const recsSection = document.getElementById('recommendations-section');
+            const recsContent = document.getElementById('recommendations-content');
+            recsSection.classList.add('active');
+            recsContent.innerHTML = '<div class="loading"><div class="spinner"></div>Generating recommendations...</div>';
+            recsSection.scrollIntoView({ behavior: 'smooth' });
+
+            try {
+                const response = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        product: product,
+                        occasion: document.getElementById('occasion').value,
+                        style_vibe: document.getElementById('style').value
+                    })
+                });
+
+                const outfit = await response.json();
+                displayRecommendations(outfit);
+            } catch (error) {
+                recsContent.innerHTML = '<div class="loading">Error generating recommendations.</div>';
+                console.error('Error:', error);
+            }
+        }
+
+        function displayRecommendations(outfit) {
+            const content = document.getElementById('recommendations-content');
+            const fallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f0f0f0' width='200' height='200'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+            let html = `
+                <div class="anchor-product">
+                    <img src="/images/${outfit.anchor_product.image_filename}"
+                         alt="${outfit.anchor_product.name}"
+                         onerror="this.src='${fallback}'">
+                    <div>
+                        <h3>Your Selection</h3>
+                        <p><strong>${outfit.anchor_product.name}</strong></p>
+                        <p style="color: #7f8c8d; margin-top: 5px;">${outfit.anchor_product.description || ''}</p>
+                        <p style="margin-top: 10px;">
+                            <span style="background: #e8f4f8; padding: 5px 10px; border-radius: 5px; margin-right: 10px;">
+                                📅 ${outfit.context.occasion}
+                            </span>
+                            <span style="background: #f8e8f8; padding: 5px 10px; border-radius: 5px;">
+                                ✨ ${outfit.context.style_vibe}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            outfit.outfit_items.forEach(item => {
+                const rec = item.recommendation;
+                html += `
+                    <div class="category-section">
+                        <h3 class="category-title">${rec.category}</h3>
+                        <p style="color: #555; margin-bottom: 15px; font-style: italic;">${rec.description}</p>
+                        <p style="color: #777; margin-bottom: 20px; font-size: 0.95em;">💡 ${rec.reasoning}</p>
+                        <div class="products-grid">
+                `;
+
+                item.matched_products.forEach(match => {
+                    const score = (match.similarity_score * 100).toFixed(0);
+                    html += `
+                        <div class="recommendation-card">
+                            <img src="/images/${match.image_filename}"
+                                 alt="${match.name}"
+                                 onerror="this.src='${fallback}'">
+                            <div class="product-name">${match.name}</div>
+                            <div class="product-category" style="margin-top: 5px;">${match.category}</div>
+                            <span class="similarity-score">Match: ${score}%</span>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+            });
+
+            content.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
